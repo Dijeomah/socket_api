@@ -116,6 +116,7 @@ server.on('connection', (socket) => {
 
     //TODO: store the client port to redis
     redisClient.set('client_address', client);
+
     //TODO: store the client port to redis
     redisClient.set('client_port', `${socket.remotePort}`);
 
@@ -125,7 +126,7 @@ server.on('connection', (socket) => {
     socket.on('data', (data) => {
         //receive TID from POS should be json
 
-        redisClient.set('client_terminal_id', data);
+        redisClient.set('client_terminal_id_' + data, data);
 
         console.log(`Client ${clientAddress}: ${data}`);
         // Write the data back to all the connected clients
@@ -225,9 +226,9 @@ async function openSocket(req, res, next) {
 async function sendDataToClient(req, res) {
     const message = JSON.stringify(req.body);
 
-    const { client_terminal_id } = req.params;
-    const client_address = redisClient.get('client_address');
-    const { redis_terminal_id } = redisClient.get('client_terminal_id');
+    const client_terminal_id = req.params;
+    const client_address = await redisClient.get('client_address');
+    const redis_terminal_id = await redisClient.get('client_terminal_id' + client_terminal_id);
 
     if (!clientSocket) {
         res.status(400).send('No active socket connection');
@@ -235,10 +236,13 @@ async function sendDataToClient(req, res) {
     }
     if (message) {
         const index = socketArray.findIndex((o) => {
-            let checkAddress = `${o.remoteAddress}:${o.remotePort}`;
-            console.log(`check address: ${checkAddress}, redis address: ${client} \n`);
+            // let checkAddress = `${o.remoteAddress}:${o.remotePort}`;
+            // console.log(`check address: ${checkAddress}, redis address: ${client} \n`);
 
-            return checkAddress === client_address;
+
+            // return checkAddress === client_address;
+
+
         });
         // if (index !== -1) socketArray.splice(index, 1);
         console.log(message)
